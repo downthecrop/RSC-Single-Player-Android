@@ -1,6 +1,7 @@
 package net.kdt.pojavlaunch.prefs.screens;
 
 import static net.kdt.pojavlaunch.prefs.LauncherPreferences.PREF_NOTCH_SIZE;
+import static net.kdt.pojavlaunch.prefs.LauncherPreferences.PREF_SCALE_FACTOR;
 
 import android.content.SharedPreferences;
 import android.os.Build;

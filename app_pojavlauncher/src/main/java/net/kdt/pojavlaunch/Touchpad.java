@@ -3,6 +3,7 @@ package net.kdt.pojavlaunch;
 import static net.kdt.pojavlaunch.GLFWGLSurface.FINGER_SCROLL_THRESHOLD;
 import static net.kdt.pojavlaunch.Tools.currentDisplayMetrics;
 import static net.kdt.pojavlaunch.prefs.LauncherPreferences.DEFAULT_PREF;
+import static net.kdt.pojavlaunch.prefs.LauncherPreferences.PREF_SCALE_FACTOR;
 
 import android.content.Context;
 import android.os.Build;
@@ -35,7 +36,7 @@ public class Touchpad extends FrameLayout implements GrabListener{
     /* Detect a classic android Tap */
     private final GestureDetector mSingleTapDetector = new GestureDetector(getContext(), new SingleTapConfirm());
     /* Resolution scaler option, allow downsizing a window */
-    private final float mScaleFactor = DEFAULT_PREF.getInt("resolutionRatio",100)/100f;
+    private final float mScaleFactor = PREF_SCALE_FACTOR/100f;
     /* Current pointer ID to move the mouse */
     private int mCurrentPointerID = -1000;
     /* Previous MotionEvent position, not scale */
