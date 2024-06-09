@@ -3,6 +3,8 @@ package net.kdt.pojavlaunch;
 import static net.kdt.pojavlaunch.MainActivity.fullyExit;
 import static net.kdt.pojavlaunch.Tools.currentDisplayMetrics;
 
+import static java.security.AccessController.getContext;
+
 import android.annotation.SuppressLint;
 import android.content.ClipboardManager;
 import android.graphics.Color;
@@ -48,7 +50,10 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
     private LinearLayout mTouchPad;
     private ImageView mMousePointerImageView;
     private GestureDetector mGestureDetector;
+
+    private GestureDetector longPressDetector;
     private boolean cameraMode = false;
+    float prevX = 0, prevY = 0;
     private long lastPress = 0;
     private ScaleGestureDetector scaleGestureDetector;
     private boolean rcState = false;
@@ -91,10 +96,11 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
             ViewGroup.LayoutParams params = mMousePointerImageView.getLayoutParams();
             params.width = (int) (36 / 100f * LauncherPreferences.PREF_MOUSESCALE);
             params.height = (int) (54 / 100f * LauncherPreferences.PREF_MOUSESCALE);
+            if(LauncherPreferences.PREF_VIRTUAL_MOUSE_START)
+                toggleVirtualMouse();
         });
 
         mTouchPad.setOnTouchListener(new View.OnTouchListener() {
-            float prevX = 0, prevY = 0;
             @Override
             public boolean onTouch(View v, MotionEvent event) {
                 // MotionEvent reports input details from the touch screen
@@ -120,8 +126,8 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
                     }
                 } else {
                     if (action == MotionEvent.ACTION_MOVE) { // 2
-                        mouseX = Math.max(0, Math.min(currentDisplayMetrics.widthPixels, mouseX + (x - prevX) * LauncherPreferences.PREF_MOUSESPEED));
-                        mouseY = Math.max(0, Math.min(currentDisplayMetrics.heightPixels, mouseY + (y - prevY) * LauncherPreferences.PREF_MOUSESPEED));
+                        mouseX = Math.max(0, Math.min(currentDisplayMetrics.widthPixels, mouseX + (x - prevX) * mouseSpeed));
+                        mouseY = Math.max(0, Math.min(currentDisplayMetrics.heightPixels, mouseY + (y - prevY) * mouseSpeed));
                         placeMouseAt(mouseX, mouseY);
                         sendScaledMousePosition(mouseX, mouseY);
                     }
@@ -130,8 +136,6 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
                         if (event.getPointerCount() == 2) {
                             // Right-click event when a second finger touches the screen
                             // Simulating right-click by sending GLFW_MOUSE_BUTTON_RIGHT event
-                            Log.i("downthecrop","Hi from a rightclick event!");
-                            //activateRC();
                             AWTInputBridge.sendKey((char)AWTInputEvent.VK_F11,AWTInputEvent.VK_F11);
                             AWTInputBridge.sendMousePress(AWTInputEvent.BUTTON1_DOWN_MASK);
                         }
@@ -146,6 +150,7 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
 
         mTextureView.setOnTouchListener((v, event) -> {
             scaleGestureDetector.onTouchEvent(event);
+            longPressDetector.onTouchEvent(event);
             float x = event.getX();
             float y = event.getY();
             if (mGestureDetector.onTouchEvent(event)) {
@@ -164,9 +169,32 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
                     break;
                 case MotionEvent.ACTION_MOVE: // 2
                     sendScaledMousePosition(x + mTextureView.getX(), y);
+                    try {
+                        panCamera(prevX-x, prevY-y);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
                     break;
             }
+
+            prevY = y;
+            prevX = x;
             return true;
+        });
+
+        longPressDetector = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener() {
+            @Override
+            public void onLongPress(MotionEvent e) {
+                // Send RightClick
+                AWTInputBridge.sendKey((char)AWTInputEvent.VK_F11,AWTInputEvent.VK_F11);
+                AWTInputBridge.sendMousePress(AWTInputEvent.BUTTON1_DOWN_MASK);
+                super.onLongPress(e);
+            }
+
+            @Override
+            public boolean onSingleTapUp(MotionEvent e) {
+                return super.onSingleTapUp(e);
+            }
         });
 
         try {
@@ -203,14 +231,28 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
         } catch (Throwable th) {
             Tools.showError(this, th, true);
         }
+    }
 
+    private void panCamera(float dx, float dy) throws InterruptedException {
+        //Log.i("downthecrop-pan","dx: " +dx + " dy: " + dy);
+        final float threshold = 8.0f; // adjust this value as needed to control the sensitivity of the panning
 
-        getOnBackPressedDispatcher().addCallback(new OnBackPressedCallback(true) {
-            @Override
-            public void handleOnBackPressed() {
-                MainActivity.dialogForceClose(JavaGUILauncherActivity.this);
-            }
-        });
+        // Check horizontal panning
+        if(dx > threshold) {
+            // Finger moved to the right, pan camera to the right
+            AWTInputBridge.sendKey((char)AWTInputEvent.VK_RIGHT, AWTInputEvent.VK_RIGHT);
+        } else if(dx < -threshold) {
+            AWTInputBridge.sendKey((char)AWTInputEvent.VK_LEFT, AWTInputEvent.VK_LEFT);
+        }
+
+        // Check vertical panning
+        if(dy > threshold) {
+            // Finger moved down, pan camera up
+            AWTInputBridge.sendKey((char)AWTInputEvent.VK_UP, AWTInputEvent.VK_UP);
+        } else if(dy < -threshold) {
+            // Finger moved up, pan camera down
+            AWTInputBridge.sendKey((char)AWTInputEvent.VK_DOWN, AWTInputEvent.VK_DOWN);
+        }
     }
 
     @Override
@@ -261,7 +303,6 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
                     break;
                 case R.id.camera:
                     if (!cameraMode) { // Camera Mode On
-                        Log.i("downthecrop", "Hello from the camrea Button");
                         AWTInputBridge.sendKey((char) AWTInputEvent.VK_F9, AWTInputEvent.VK_F9); // Send F9
                         cameraMode = true;
                         findViewById(R.id.camera).setBackground(getResources().getDrawable( R.drawable.control_button_pressed ));
@@ -272,7 +313,7 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
                     }
                     break;
                 case R.id.mouseMode:
-                    toggleVirtualMouse(this.getCurrentFocus());
+                    toggleVirtualMouse();
             }
             lastPress = time;
         }
@@ -320,7 +361,7 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
         mLoggerView.setVisibility(View.VISIBLE);
     }
 
-    public void toggleVirtualMouse(View v) {
+    public void toggleVirtualMouse() {
         mIsVirtualMouseEnabled = !mIsVirtualMouseEnabled;
         ImageView view = findViewById(R.id.mouseModeIco);
         if(!mIsVirtualMouseEnabled){
