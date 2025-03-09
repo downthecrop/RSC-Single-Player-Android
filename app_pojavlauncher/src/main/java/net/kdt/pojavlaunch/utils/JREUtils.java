@@ -312,6 +312,7 @@ public class JREUtils {
                 "-Djava.home=" + runtimeHome,
                 "-Djava.io.tmpdir=" + Tools.DIR_CACHE.getAbsolutePath(),
                 "-Duser.home=" + Tools.DIR_GAME_HOME,
+                "-Duser.dir=" + Tools.DIR_DATA, // Cache for RSC
                 "-Duser.language=" + System.getProperty("user.language"),
                 "-Dos.name=Linux",
                 "-Dos.version=Android-" + Build.VERSION.RELEASE,

@@ -234,7 +234,7 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
     }
 
     private void panCamera(float dx, float dy) throws InterruptedException {
-        //Log.i("downthecrop-pan","dx: " +dx + " dy: " + dy);
+        Log.i("downthecrop-pan","dx: " +dx + " dy: " + dy);
         final float threshold = 8.0f; // adjust this value as needed to control the sensitivity of the panning
 
         // Check horizontal panning
@@ -243,15 +243,6 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
             AWTInputBridge.sendKey((char)AWTInputEvent.VK_RIGHT, AWTInputEvent.VK_RIGHT);
         } else if(dx < -threshold) {
             AWTInputBridge.sendKey((char)AWTInputEvent.VK_LEFT, AWTInputEvent.VK_LEFT);
-        }
-
-        // Check vertical panning
-        if(dy > threshold) {
-            // Finger moved down, pan camera up
-            AWTInputBridge.sendKey((char)AWTInputEvent.VK_UP, AWTInputEvent.VK_UP);
-        } else if(dy < -threshold) {
-            // Finger moved up, pan camera down
-            AWTInputBridge.sendKey((char)AWTInputEvent.VK_DOWN, AWTInputEvent.VK_DOWN);
         }
     }
 

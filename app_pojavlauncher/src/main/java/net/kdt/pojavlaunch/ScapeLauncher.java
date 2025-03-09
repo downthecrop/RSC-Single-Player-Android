@@ -26,7 +26,6 @@ public class ScapeLauncher extends BaseActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_dummy_launcher);
-        settings = findViewById(R.id.settings);
         playHD = findViewById(R.id.playHD);
         playSD = findViewById(R.id.playSD);
         mProgressLayout = findViewById(R.id.progress_layout);
@@ -38,8 +37,9 @@ public class ScapeLauncher extends BaseActivity {
         mProgressLayout.observe(ProgressLayout.INSTALL_MODPACK);
 
         playHD.setOnClickListener(view -> {
+            // Double launch sd
             if(!runtimeReady()) return;
-            Intent intent = new Intent(ScapeLauncher.this, MainActivity.class);
+            Intent intent = new Intent(ScapeLauncher.this, JavaGUILauncherActivity.class);
             startActivity(intent);
         });
 
@@ -48,9 +48,14 @@ public class ScapeLauncher extends BaseActivity {
             Intent intent = new Intent(ScapeLauncher.this, JavaGUILauncherActivity.class);
             startActivity(intent);
         });
-        settings.setOnClickListener(view -> showBottomDialog());
+        //ProgressKeeper.addTaskCountListener(this::launchOnFinished); // this should work but it doesn't...
     }
-
+    private void launchOnFinished(int tc){
+        if(!mProgressLayout.hasProcesses()){
+            Intent intent = new Intent(ScapeLauncher.this, MainActivity.class);
+            startActivity(intent);
+        }
+    }
 
     private boolean runtimeReady(){
         if(mProgressLayout.hasProcesses()){
@@ -58,12 +63,6 @@ public class ScapeLauncher extends BaseActivity {
             return false;
         }
         return true;
-    }
-
-    @SuppressLint("ClickableViewAccessibility")
-    private void showBottomDialog() {
-        MyDialogFragment dialog = new MyDialogFragment();
-        dialog.show(getSupportFragmentManager(), "tag");
     }
 
     @Override
