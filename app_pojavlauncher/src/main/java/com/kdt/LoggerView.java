@@ -90,7 +90,6 @@ public class LoggerView extends ConstraintLayout {
 
         // Listen to logs
         mLogListener = text -> {
-            Log.i("jrelog-logcat",text);
             if(text.startsWith("pDAT")){
                 try {
                     // 1. Extract the base64 string after the "pDAT " prefix
@@ -98,9 +97,15 @@ public class LoggerView extends ConstraintLayout {
 
                     // 2. Decode Base64 to get compressed bytes
                     byte[] compressedBytes = null;
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        compressedBytes = Base64.getDecoder().decode(base64Data);
+                    try{
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            compressedBytes = Base64.getDecoder().decode(base64Data);
+                        }
+                    } catch (Exception e){
+                        Log.e("jrelog-logcat", "Failed to decode player_data save.");
                     }
+
+                    if (compressedBytes == null) return;
 
                     // 3. Decompress GZIP to get the original serialized data
                     byte[] decompressedBytes = decompressGzip(compressedBytes);
@@ -112,7 +117,12 @@ public class LoggerView extends ConstraintLayout {
                     }
 
                     System.out.println("Successfully wrote decompressed data to: " + outputFile.getAbsolutePath());
-
+                    try{
+                        Logger.begin(text);
+                        Log.i("jrelog-logcat", "Log Flushed");
+                    } catch (Exception e) {
+                        Log.e("jrelog-logcat", "Failed to flush the log");
+                    }
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -123,9 +133,15 @@ public class LoggerView extends ConstraintLayout {
 
                     // 2. Decode Base64 to get compressed bytes
                     byte[] compressedBytes = null;
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        compressedBytes = Base64.getDecoder().decode(base64Data);
+                    try{
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            compressedBytes = Base64.getDecoder().decode(base64Data);
+                        }
+                    } catch (Exception e){
+                        Log.e("jrelog-logcat", "Failed to decode player_cache save");
                     }
+
+                    if (compressedBytes == null) return;
 
                     // 3. Decompress GZIP to get the original serialized data
                     byte[] decompressedBytes = decompressGzip(compressedBytes);
@@ -137,11 +153,17 @@ public class LoggerView extends ConstraintLayout {
                     }
 
                     System.out.println("Successfully wrote decompressed data to: " + outputFile.getAbsolutePath());
-
+                    try{
+                        Logger.begin(text);
+                        Log.i("jrelog-logcat", "Log Flushed");
+                    } catch (Exception e) {
+                        Log.e("jrelog-logcat", "Failed to flush the log");
+                    }
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
+            Log.i("jrelog-logcat",text);
             if(mLogTextView.getVisibility() != VISIBLE) return;
             post(() -> {
                 mLogTextView.append(text + '\n');
@@ -152,6 +174,7 @@ public class LoggerView extends ConstraintLayout {
     }
 
     private byte[] decompressGzip(byte[] compressedData) throws IOException {
+        if (compressedData == null) return null;
         try (ByteArrayInputStream byteStream = new ByteArrayInputStream(compressedData);
              GZIPInputStream gzipStream = new GZIPInputStream(byteStream);
              ByteArrayOutputStream outStream = new ByteArrayOutputStream()) {
